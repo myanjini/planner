@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import select
 from auth.hash_password import HashPassword
 from auth.jwt_handler import create_jwt_token
@@ -38,8 +40,8 @@ async def sign_new_user(data: UserSignUp, session = Depends(get_session)) -> dic
 
 # 로그인
 @user_router.post("/signin")
-async def sign_in(data: UserSignIn, session = Depends(get_session)) -> dict:
-    statement = select(User).where(User.email == data.email)
+async def sign_in(data: OAuth2PasswordRequestForm = Depends(), session = Depends(get_session)) -> dict:
+    statement = select(User).where(User.email == data.username)
     user = session.exec(statement).first()
     if not user:
         raise HTTPException(
@@ -57,3 +59,11 @@ async def sign_in(data: UserSignIn, session = Depends(get_session)) -> dict:
         "username": user.username, 
         "access_token": create_jwt_token(user.email, user.id)
     }
+    # return JSONResponse(    
+    #     status_code=status.HTTP_200_OK,
+    #     content={
+    #         "message": "로그인에 성공했습니다.",
+    #         "username": user.username, 
+    #         "access_token": create_jwt_token(user.email, user.id)
+    #     }
+    # )
